@@ -11,3 +11,7 @@ xformers
 tensorboard
 av
 kornia
+torchvision
+Flask
+Flask-Uploads
+moviepy
