@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 import subprocess
 import yaml
+import random
 
 app = Flask(__name__)
 
@@ -38,11 +39,12 @@ def edit_video():
     if video_file and allowed_file(video_file.filename):
         # Save the uploaded video inside the 'data' directory
         filename = secure_filename(video_file.filename)
-        video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        extracted_filename = filename[5:13]
+        video_path = os.path.join(app.config['UPLOAD_FOLDER'], extracted_filename + '.mp4')
         video_file.save(video_path)
 
         # Call the function to edit the video based on the prompt
-        edited_video_path = edit_video_function(video_path, prompt, filename)
+        edited_video_path = edit_video_function(video_path, prompt, extracted_filename)
 
         # Check if editing was successful
         if edited_video_path is not None:
@@ -84,8 +86,9 @@ def edit_video_function(video_path, prompt, filename):
         return None
 
 def create_config_file(filename, prompt, config_path):
+    seed = random.randint(0, 2**32 - 1)
     config_data = {
-        'seed': -1,
+        'seed': seed,
         'device': 'cuda',
         'output_path': 'tokenflow-results',
         'data_path': 'data/uploads/' + filename,
@@ -111,3 +114,4 @@ def create_config_file(filename, prompt, config_path):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
+
