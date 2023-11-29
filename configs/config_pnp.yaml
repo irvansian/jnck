@@ -1,6 +1,6 @@
 # general
 seed: 1
-device: 'cpu'
+device: 'cuda'
 output_path: 'tokenflow-results'
 
 # data
