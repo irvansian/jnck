@@ -1,12 +1,17 @@
-# app.py
 from flask import Flask, jsonify, request
 from werkzeug.utils import secure_filename
 from moviepy.editor import VideoFileClip
-
 import os
 import subprocess
 
 app = Flask(__name__)
+
+# Ensure the 'uploads' and 'edited' directories exist
+if not os.path.exists('data/uploads'):
+    os.makedirs('data/uploads')
+
+if not os.path.exists('data/edited'):
+    os.makedirs('data/edited')
 
 # Set the upload folder inside the 'data' directory
 app.config['UPLOAD_FOLDER'] = 'data/uploads'
@@ -31,14 +36,9 @@ def edit_video():
     # Check if the file is allowed
     if video_file and allowed_file(video_file.filename):
         # Save the uploaded video inside the 'data' directory
-
-        # filename = secure_filename(video_file.filename)
-        filename = video_file.filename[6:]
-        print("file name : " + filename)
-        video_path = 'data/uploads/' + filename
-        print("video path : " + video_path)
+        filename = secure_filename(video_file.filename)
+        video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         video_file.save(video_path)
-        print("Video path: " + video_path)
 
         # Call the function to edit the video based on the prompt
         edited_video_path = edit_video_function(video_path, prompt)
@@ -55,10 +55,7 @@ def edit_video():
         # Return an error message for invalid file type
         return jsonify({'error': 'Invalid file type'}), 400
 
-
 def edit_video_function(video_path, prompt):
-    print("edit_video_func is called")
-
     # Build the command to call preprocess.py
     preprocess_command = [
         'python', 'preprocess.py',
@@ -75,13 +72,11 @@ def edit_video_function(video_path, prompt):
         subprocess.run(preprocess_command, check=True)
         subprocess.run(edit_video_command, check=True)
         # Return the path of the edited video (adjust this based on preprocess.py behavior)
-        edited_video_path = video_path.replace('data/uploads', 'data/edited')
+        edited_video_path = video_path.replace('uploads', 'edited')
         return edited_video_path
     except subprocess.CalledProcessError as e:
-        print(f"Error calling preprocess.py: {e}")
-        # Handle the error as needed
+        app.logger.error(f"Error calling preprocess.py or run_tokenflow_pnp.py: {e}")
         return None
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
