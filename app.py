@@ -62,7 +62,7 @@ def edit_video_function(video_path, prompt, filename):
     # Build the command to call preprocess.py
     preprocess_command = [
         'python', 'preprocess.py',
-        '--data_path', 'data/uploads/' + filename,
+        '--data_path', video_path,
         '--inversion_prompt', prompt
     ]
 
