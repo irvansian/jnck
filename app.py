@@ -90,7 +90,7 @@ def create_config_file(filename, prompt, config_path):
     config_data = {
         'seed': seed,
         'device': 'cuda',
-        'output_path': 'tokenflow-results',
+        'output_path': 'data/edited/' + filename,
         'data_path': 'data/' + filename,
         'latents_path': 'latents',  # should be the same as 'save_dir' arg used in preprocess
         'n_inversion_steps': 500,  # for retrieving the latents of the inversion

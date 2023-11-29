@@ -286,13 +286,16 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     with open(opt.config_path, "r") as f:
         config = yaml.safe_load(f)
-    config["output_path"] = os.path.join(config["output_path"] + f'_pnp_SD_{config["sd_version"]}',
-                                             Path(config["data_path"]).stem,
-                                             config["prompt"][:240],
-                                             f'attn_{config["pnp_attn_t"]}_f_{config["pnp_f_t"]}',
-                                             f'batch_size_{str(config["batch_size"])}',
-                                             str(config["n_timesteps"]),
-    )
+    # config["output_path"] = os.path.join(config["output_path"] + f'_pnp_SD_{config["sd_version"]}',
+    #                                          Path(config["data_path"]).stem,
+    #                                          config["prompt"][:240],
+    #                                          f'attn_{config["pnp_attn_t"]}_f_{config["pnp_f_t"]}',
+    #                                          f'batch_size_{str(config["batch_size"])}',
+    #                                          str(config["n_timesteps"]),
+
+    # )
+
+    config["output_path"] = os.path.join(config["output_path"])
     os.makedirs(config["output_path"], exist_ok=True)
     assert os.path.exists(config["data_path"]), "Data path does not exist"
     with open(os.path.join(config["output_path"], "config.yaml"), "w") as f:
