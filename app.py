@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request
 from werkzeug.utils import secure_filename
-from moviepy.editor import VideoFileClip
+
 import os
 import subprocess
+import yaml
 
 app = Flask(__name__)
 
@@ -41,7 +42,7 @@ def edit_video():
         video_file.save(video_path)
 
         # Call the function to edit the video based on the prompt
-        edited_video_path = edit_video_function(video_path, prompt)
+        edited_video_path = edit_video_function(video_path, prompt, filename)
 
         # Check if editing was successful
         if edited_video_path is not None:
@@ -55,7 +56,7 @@ def edit_video():
         # Return an error message for invalid file type
         return jsonify({'error': 'Invalid file type'}), 400
 
-def edit_video_function(video_path, prompt):
+def edit_video_function(video_path, prompt, filename):
     # Build the command to call preprocess.py
     preprocess_command = [
         'python', 'preprocess.py',
@@ -63,8 +64,12 @@ def edit_video_function(video_path, prompt):
         '--inversion_prompt', prompt
     ]
 
+    config_path = 'configs/config_' + filename + '.yaml'
+    create_config_file(filename, prompt, config_path)
+
     edit_video_command = [
-        'python', 'run_tokenflow_pnp.py'
+        'python', 'run_tokenflow_pnp.py',
+        '--config_path', config_path
     ]
 
     try:
@@ -77,6 +82,32 @@ def edit_video_function(video_path, prompt):
     except subprocess.CalledProcessError as e:
         app.logger.error(f"Error calling preprocess.py or run_tokenflow_pnp.py: {e}")
         return None
+
+def create_config_file(filename, prompt, config_path):
+    config_data = {
+        'seed': -1,
+        'device': 'cuda',
+        'output_path': 'tokenflow-results',
+        'data_path': 'data/uploads/' + filename,
+        'latents_path': 'latents',  # should be the same as 'save_dir' arg used in preprocess
+        'n_inversion_steps': 500,  # for retrieving the latents of the inversion
+        'n_frames': 40,
+        'sd_version': '2.1',
+        'guidance_scale': 7.5,
+        'n_timesteps': 50,
+        'prompt': prompt,
+        'negative_prompt': "ugly, blurry, low res, unrealistic, unaesthetic",
+        'batch_size': 8,
+        'pnp_attn_t': 0.5,
+        'pnp_f_t': 0.8
+    }
+
+    # Specify the path for your new config file
+    config_path = config_path
+
+    # Write the configuration to a YAML file
+    with open(config_path, 'w') as file:
+        yaml.dump(config_data, file)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
