@@ -1,17 +1,16 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
-
 import os
 import subprocess
 import yaml
 import random
+import uuid
 
 app = Flask(__name__)
 
 # Ensure the 'uploads' and 'edited' directories exist
 if not os.path.exists('data/uploads'):
     os.makedirs('data/uploads')
-
 if not os.path.exists('data/edited'):
     os.makedirs('data/edited')
 
@@ -23,49 +22,42 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 # Define allowed extensions for video files
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mkv'}
 
+# Job status tracking
+job_status = {}  # Maps job IDs to statuses
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/api/edit_video', methods=['POST'])
 def edit_video():
-    # Check if the POST request has the file part
     if 'video' not in request.files or 'prompt' not in request.form:
         return jsonify({'error': 'Missing video file or prompt'}), 400
 
     video_file = request.files['video']
     prompt = request.form['prompt']
 
-    # Check if the file is allowed
     if video_file and allowed_file(video_file.filename):
-        # Save the uploaded video inside the 'data' directory
         filename = secure_filename(video_file.filename)
         extracted_filename = filename[5:13]
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], extracted_filename + '.mp4')
         video_file.save(video_path)
 
-        # Call the function to edit the video based on the prompt
-        edited_video_path = edit_video_function(video_path, prompt, extracted_filename)
-
-        # Check if editing was successful
+        edited_video_path, job_id = edit_video_function(video_path, prompt, extracted_filename)
         if edited_video_path is not None:
-            # Provide the edited video for download or streaming
-            return jsonify({'edited_video_path': edited_video_path})
+            return jsonify({'edited_video_path': edited_video_path, 'job_id': job_id})
         else:
-            # Return an error message if editing failed
-            return jsonify({'error': 'Video editing failed'}), 500
-
+            return jsonify({'error': 'Video editing failed', 'job_id': job_id}), 500
     else:
-        # Return an error message for invalid file type
         return jsonify({'error': 'Invalid file type'}), 400
 
 def edit_video_function(video_path, prompt, filename):
-    # Build the command to call preprocess.py
+    job_id = str(uuid.uuid4())
+    job_status[job_id] = 'processing'
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
         '--inversion_prompt', prompt
     ]
-
     config_path = 'configs/config_' + filename + '.yaml'
     create_config_file(filename, prompt, config_path)
 
@@ -75,18 +67,27 @@ def edit_video_function(video_path, prompt, filename):
     ]
 
     try:
-        # Execute the command
         subprocess.run(preprocess_command, check=True)
         subprocess.run(edit_video_command, check=True)
-        # Return the path of the edited video (adjust this based on preprocess.py behavior)
         edited_video_path = video_path.replace('uploads', 'edited')
-        return edited_video_path
+        job_status[job_id] = 'completed'
+        return edited_video_path, job_id
     except subprocess.CalledProcessError as e:
         app.logger.error(f"Error calling preprocess.py or run_tokenflow_pnp.py: {e}")
-        return None
+        job_status[job_id] = 'failed'
+        return None, job_id
+
+@app.route('/api/status/<job_id>', methods=['GET'])
+def check_status(job_id):
+    status = job_status.get(job_id, 'unknown')
+    return jsonify({'job_id': job_id, 'status': status})
+
+@app.route('/api/download/<filename>', methods=['GET'])
+def download_file(filename):
+    return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
 def create_config_file(filename, prompt, config_path):
-    seed = random.randint(0, 2**32 - 1)
+    seed = random.randint(0, 2 ** 32 - 1)
     config_data = {
         'seed': seed,
         'device': 'cuda',
@@ -104,14 +105,8 @@ def create_config_file(filename, prompt, config_path):
         'pnp_attn_t': 0.5,
         'pnp_f_t': 0.8
     }
-
-    # Specify the path for your new config file
-    config_path = config_path
-
-    # Write the configuration to a YAML file
     with open(config_path, 'w') as file:
         yaml.dump(config_data, file)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
