@@ -83,7 +83,7 @@ def edit_video_function(video_path, prompt, filename, height, width, frame_count
 
     ]
     config_path = 'configs/config_' + filename + '.yaml'
-    create_config_file(filename, prompt, config_path)
+    create_config_file(filename, prompt, config_path, frame_count)
 
     edit_video_command = [
         'python', 'run_tokenflow_pnp.py',
@@ -101,7 +101,7 @@ def edit_video_function(video_path, prompt, filename, height, width, frame_count
         job_status[job_id] = 'failed'
         return None, job_id
 
-def create_config_file(filename, prompt, config_path):
+def create_config_file(filename, prompt, config_path, frame_number):
     seed = random.randint(0, 2 ** 32 - 1)
     config_data = {
         'seed': seed,
@@ -110,7 +110,7 @@ def create_config_file(filename, prompt, config_path):
         'data_path': 'data/' + filename,
         'latents_path': 'latents',  # should be the same as 'save_dir' arg used in preprocess
         'n_inversion_steps': 500,  # for retrieving the latents of the inversion
-        'n_frames': 40,
+        'n_frames': frame_number,
         'sd_version': '2.1',
         'guidance_scale': 7.5,
         'n_timesteps': 50,
