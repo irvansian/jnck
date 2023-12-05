@@ -46,7 +46,7 @@ def edit_video():
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], extracted_filename + '.mp4')
         video_file.save(video_path)
 
-        job_id = str(uuid.uuid4())
+        job_id = extracted_filename
         job_status[job_id] = 'processing'
         threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename)).start()
 
