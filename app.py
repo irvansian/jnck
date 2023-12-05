@@ -50,6 +50,7 @@ def edit_video():
         video = cv2.VideoCapture(video_path)
         width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
         height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         video.release()
 
         job_id = extracted_filename
@@ -76,8 +77,8 @@ def edit_video_function(video_path, prompt, filename, height, width):
         'python', 'preprocess.py',
         '--data_path', video_path,
         '--inversion_prompt', prompt,
-        '--H', height,
-        '--W', width
+        '--H', str(height),
+        '--W', str(width)
 
     ]
     config_path = 'configs/config_' + filename + '.yaml'
