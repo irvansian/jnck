@@ -5,28 +5,32 @@ import subprocess
 import yaml
 import random
 import uuid
+import threading
 
 app = Flask(__name__)
 
-# Ensure the 'uploads' and 'edited' directories exist
 if not os.path.exists('data/uploads'):
     os.makedirs('data/uploads')
 if not os.path.exists('data/edited'):
     os.makedirs('data/edited')
 
-# Set the upload folder inside the 'data' directory
 app.config['UPLOAD_FOLDER'] = 'data/uploads'
-# Limit upload size to 16 MB
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Define allowed extensions for video files
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mkv'}
 
-# Job status tracking
 job_status = {}  # Maps job IDs to statuses
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def process_video(job_id, video_path, prompt, extracted_filename):
+    try:
+        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename)
+        job_status[job_id] = 'completed' if edited_video_path else 'failed'
+    except Exception as e:
+        app.logger.error(f"Error processing video: {e}")
+        job_status[job_id] = 'failed'
 
 @app.route('/api/edit_video', methods=['POST'])
 def edit_video():
@@ -42,13 +46,22 @@ def edit_video():
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], extracted_filename + '.mp4')
         video_file.save(video_path)
 
-        edited_video_path, job_id = edit_video_function(video_path, prompt, extracted_filename)
-        if edited_video_path is not None:
-            return jsonify({'edited_video_path': edited_video_path, 'job_id': job_id})
-        else:
-            return jsonify({'error': 'Video editing failed', 'job_id': job_id}), 500
+        job_id = str(uuid.uuid4())
+        job_status[job_id] = 'processing'
+        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename)).start()
+
+        return jsonify({'message': 'Video is being processed', 'job_id': job_id})
     else:
         return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/api/status/<job_id>', methods=['GET'])
+def check_status(job_id):
+    status = job_status.get(job_id, 'unknown')
+    return jsonify({'job_id': job_id, 'status': status})
+
+@app.route('/api/download/<filename>', methods=['GET'])
+def download_file(filename):
+    return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
 def edit_video_function(video_path, prompt, filename):
     job_id = str(uuid.uuid4())
@@ -76,15 +89,6 @@ def edit_video_function(video_path, prompt, filename):
         app.logger.error(f"Error calling preprocess.py or run_tokenflow_pnp.py: {e}")
         job_status[job_id] = 'failed'
         return None, job_id
-
-@app.route('/api/status/<job_id>', methods=['GET'])
-def check_status(job_id):
-    status = job_status.get(job_id, 'unknown')
-    return jsonify({'job_id': job_id, 'status': status})
-
-@app.route('/api/download/<filename>', methods=['GET'])
-def download_file(filename):
-    return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
 def create_config_file(filename, prompt, config_path):
     seed = random.randint(0, 2 ** 32 - 1)
