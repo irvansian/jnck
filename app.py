@@ -77,8 +77,8 @@ def edit_video_function(video_path, prompt, filename, height, width):
         'python', 'preprocess.py',
         '--data_path', video_path,
         '--inversion_prompt', prompt,
-        '--H', str(height),
-        '--W', str(width)
+        '--H', str(int(height)),
+        '--W', str(int(width))
 
     ]
     config_path = 'configs/config_' + filename + '.yaml'
