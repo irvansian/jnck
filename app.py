@@ -1,3 +1,4 @@
+import cv2
 from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 import os
@@ -24,9 +25,9 @@ job_status = {}  # Maps job IDs to statuses
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def process_video(job_id, video_path, prompt, extracted_filename):
+def process_video(job_id, video_path, prompt, extracted_filename, height, width):
     try:
-        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename)
+        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename, height, width)
         job_status[job_id] = 'completed' if edited_video_path else 'failed'
     except Exception as e:
         app.logger.error(f"Error processing video: {e}")
@@ -46,9 +47,14 @@ def edit_video():
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], extracted_filename + '.mp4')
         video_file.save(video_path)
 
+        video = cv2.VideoCapture(video_path)
+        width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        video.release()
+
         job_id = extracted_filename
         job_status[job_id] = 'processing'
-        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename)).start()
+        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename, height, width)).start()
 
         return jsonify({'message': 'Video is being processed', 'job_id': job_id})
     else:
@@ -63,13 +69,16 @@ def check_status(job_id):
 def download_file(filename):
     return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
-def edit_video_function(video_path, prompt, filename):
+def edit_video_function(video_path, prompt, filename, height, width):
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
-        '--inversion_prompt', prompt
+        '--inversion_prompt', prompt,
+        '--H', height,
+        '--W', width
+
     ]
     config_path = 'configs/config_' + filename + '.yaml'
     create_config_file(filename, prompt, config_path)
