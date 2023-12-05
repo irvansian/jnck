@@ -25,9 +25,9 @@ job_status = {}  # Maps job IDs to statuses
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def process_video(job_id, video_path, prompt, extracted_filename, height, width):
+def process_video(job_id, video_path, prompt, extracted_filename, height, width, frame_count):
     try:
-        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename, height, width)
+        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename, height, width, frame_count)
         job_status[job_id] = 'completed' if edited_video_path else 'failed'
     except Exception as e:
         app.logger.error(f"Error processing video: {e}")
@@ -55,7 +55,7 @@ def edit_video():
 
         job_id = extracted_filename
         job_status[job_id] = 'processing'
-        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename, height, width)).start()
+        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename, height, width, frame_count)).start()
 
         return jsonify({'message': 'Video is being processed', 'job_id': job_id})
     else:
@@ -70,7 +70,7 @@ def check_status(job_id):
 def download_file(filename):
     return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
-def edit_video_function(video_path, prompt, filename, height, width):
+def edit_video_function(video_path, prompt, filename, height, width, frame_count):
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
     preprocess_command = [
@@ -78,7 +78,8 @@ def edit_video_function(video_path, prompt, filename, height, width):
         '--data_path', video_path,
         '--inversion_prompt', prompt,
         '--H', str(int(height)),
-        '--W', str(int(width))
+        '--W', str(int(width)),
+        '--n_frames', str(frame_count)
 
     ]
     config_path = 'configs/config_' + filename + '.yaml'
