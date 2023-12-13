@@ -1,4 +1,5 @@
 import cv2
+import torch
 from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 import os
@@ -52,6 +53,8 @@ def edit_video():
         height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
         frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         video.release()
+
+        torch.cuda.empty_cache()
 
         job_id = extracted_filename
         job_status[job_id] = 'processing'
