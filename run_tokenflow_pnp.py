@@ -39,7 +39,7 @@ class TokenFlow(nn.Module):
         elif sd_version == 'depth':
             model_key = "stabilityai/stable-diffusion-2-depth"
         elif sd_version == 'XL':
-            model_key = ""
+            model_key = "stabilityai/stable-diffusion-xl-base-1.0"
         else:
             raise ValueError(f'Stable-diffusion version {sd_version} not supported.')
 
