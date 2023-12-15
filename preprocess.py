@@ -44,6 +44,8 @@ class Preprocess(nn.Module):
             model_key = "runwayml/stable-diffusion-v1-5"
         elif self.sd_version == 'depth':
             model_key = "stabilityai/stable-diffusion-2-depth"
+        elif self.sd_versino == 'XL':
+            model_key = "stabilityai/stable-diffusion-xl-base-1.0"
         else:
             raise ValueError(f'Stable-diffusion version {self.sd_version} not supported.')
         self.model_key = model_key
@@ -294,6 +296,8 @@ def prep(opt):
         model_key = "runwayml/stable-diffusion-v1-5"
     elif opt.sd_version == 'depth':
         model_key = "stabilityai/stable-diffusion-2-depth"
+    elif opt.sd_version == 'XL':
+        model_key = "stabilityai/stable-diffusion-xl-base-1.0"
     toy_scheduler = DDIMScheduler.from_pretrained(model_key, subfolder="scheduler")
     toy_scheduler.set_timesteps(opt.save_steps)
     timesteps_to_save, num_inference_steps = get_timesteps(toy_scheduler, num_inference_steps=opt.save_steps,

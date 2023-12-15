@@ -38,6 +38,8 @@ class TokenFlow(nn.Module):
             model_key = "runwayml/stable-diffusion-v1-5"
         elif sd_version == 'depth':
             model_key = "stabilityai/stable-diffusion-2-depth"
+        elif sd_version == 'XL':
+            model_key = ""
         else:
             raise ValueError(f'Stable-diffusion version {sd_version} not supported.')
 

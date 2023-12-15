@@ -10,7 +10,7 @@ n_inversion_steps: 500 # for retrieving the latents of the inversion
 n_frames: 40
 
 
-sd_version: '2.1'
+sd_version: 'XL'
 guidance_scale: 7.5
 n_timesteps: 50
 prompt: "a marble sculpture of a woman running, Venus de Milo"
