@@ -79,7 +79,7 @@ def edit_video_function(video_path, prompt, filename, height, width, frame_count
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
-        '--inversion_prompt', prompt,
+        # '--inversion_prompt', prompt,
         '--H', str(int(height)),
         '--W', str(int(width)),
         '--n_frames', str(frame_count)
