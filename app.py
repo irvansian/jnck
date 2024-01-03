@@ -113,7 +113,7 @@ def create_config_file(filename, prompt, config_path, frame_number):
         'data_path': 'data/' + filename,
         'latents_path': 'latents',  # should be the same as 'save_dir' arg used in preprocess
         'n_inversion_steps': 500,  # for retrieving the latents of the inversion
-        # 'n_frames': frame_number,
+        'n_frames': frame_number,
         'sd_version': '2.1',
         'guidance_scale': 7.5,
         'n_timesteps': 50,
