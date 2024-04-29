@@ -21,14 +21,14 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mkv'}
 
-job_status = {}  # Maps job IDs to statuses
+job_status = {}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def process_video(job_id, video_path, prompt, extracted_filename, height, width, frame_count):
+def process_video(job_id, video_path, prompt, inversion_prompt, extracted_filename, height, width, frame_count):
     try:
-        edited_video_path, _ = edit_video_function(video_path, prompt, extracted_filename, height, width, frame_count)
+        edited_video_path, _ = edit_video_function(video_path, prompt, inversion_prompt, extracted_filename, height, width, frame_count)
         job_status[job_id] = 'completed' if edited_video_path else 'failed'
     except Exception as e:
         app.logger.error(f"Error processing video: {e}")
@@ -41,6 +41,7 @@ def edit_video():
 
     video_file = request.files['video']
     prompt = request.form['prompt']
+    inversion_prompt = request.form['inversion_prompt']
 
     if video_file and allowed_file(video_file.filename):
         filename = secure_filename(video_file.filename)
@@ -58,7 +59,7 @@ def edit_video():
 
         job_id = extracted_filename
         job_status[job_id] = 'processing'
-        threading.Thread(target=process_video, args=(job_id, video_path, prompt, extracted_filename, height, width, frame_count)).start()
+        threading.Thread(target=process_video, args=(job_id, video_path, prompt, inversion_prompt, extracted_filename, height, width, frame_count)).start()
 
         return jsonify({'message': 'Video is being processed', 'job_id': job_id})
     else:
@@ -73,13 +74,13 @@ def check_status(job_id):
 def download_file(filename):
     return send_from_directory(os.path.join('data/edited', filename), 'tokenflow_PnP_fps_30.mp4')
 
-def edit_video_function(video_path, prompt, filename, height, width, frame_count):
+def edit_video_function(video_path, prompt, inversion_prompt, filename, height, width, frame_count):
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
-        # '--inversion_prompt', prompt,
+        '--inversion_prompt', prompt,
         '--H', str(int(height)),
         '--W', str(int(width)),
         '--n_frames', str(frame_count)
@@ -111,8 +112,8 @@ def create_config_file(filename, prompt, config_path, frame_number):
         'device': 'cuda',
         'output_path': 'data/edited/' + filename,
         'data_path': 'data/' + filename,
-        'latents_path': 'latents',  # should be the same as 'save_dir' arg used in preprocess
-        'n_inversion_steps': 500,  # for retrieving the latents of the inversion
+        'latents_path': 'latents',
+        'n_inversion_steps': 500,
         'n_frames': frame_number,
         'sd_version': '2.1',
         'guidance_scale': 7.5,

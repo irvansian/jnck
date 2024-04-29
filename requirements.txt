@@ -15,3 +15,4 @@ torchvision
 Flask
 Flask-Uploads
 moviepy
+replicate
