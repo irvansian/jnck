@@ -77,14 +77,15 @@ def download_file(filename):
 def edit_video_function(video_path, prompt, inversion_prompt, filename, height, width, frame_count):
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
+    save_dir_path = os.path.join('latents', video_path)
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
-        '--inversion_prompt', prompt,
+        '--inversion_prompt', inversion_prompt,
+        '--save_dir', save_dir_path,
         '--H', str(int(height)),
         '--W', str(int(width)),
         '--n_frames', str(frame_count)
-
     ]
     config_path = 'configs/config_' + filename + '.yaml'
     create_config_file(filename, prompt, config_path, frame_count)
@@ -94,8 +95,11 @@ def edit_video_function(video_path, prompt, inversion_prompt, filename, height, 
         '--config_path', config_path
     ]
 
+    latents_path = os.path.join('latents', 'sd_2.1', filename)
+
     try:
-        subprocess.run(preprocess_command, check=True)
+        if not os.path.exists(latents_path):
+            subprocess.run(preprocess_command, check=True)
         subprocess.run(edit_video_command, check=True)
         edited_video_path = video_path.replace('uploads', 'edited')
         job_status[job_id] = 'completed'
