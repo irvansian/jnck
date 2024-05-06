@@ -98,8 +98,8 @@ def edit_video_function(video_path, prompt, inversion_prompt, filename, height, 
     latents_path = os.path.join('latents', 'sd_2.1', filename)
 
     try:
-        if not os.path.exists(latents_path):
-            subprocess.run(preprocess_command, check=True)
+        subprocess.run(preprocess_command, check=True)
+
         subprocess.run(edit_video_command, check=True)
         edited_video_path = video_path.replace('uploads', 'edited')
         job_status[job_id] = 'completed'
