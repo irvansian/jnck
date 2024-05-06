@@ -227,7 +227,9 @@ class Preprocess(nn.Module):
                 latent_frames[b:b + batch_size] = mu * pred_x0 + sigma * eps
 
             if save_latents and t in timesteps_to_save:
+                print("Saving latents to " + os.path.join(save_path, 'latents', f'noisy_latents_{t}.pt'))
                 torch.save(latent_frames, os.path.join(save_path, 'latents', f'noisy_latents_{t}.pt'))
+        print("Saving latents to " + os.path.join(save_path, 'latents', f'noisy_latents_{t}.pt'))
         torch.save(latent_frames, os.path.join(save_path, 'latents', f'noisy_latents_{t}.pt'))
         return latent_frames
 
