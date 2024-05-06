@@ -78,7 +78,7 @@ def edit_video_function(video_path, prompt, inversion_prompt, filename, height, 
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
     extracted_filename = video_path[5:13]
-    latents_path = os.path.join('latents', 'sd_2.1', filename)
+    latents_path = os.path.join('latents')
     save_dir_path = os.path.join('latents', extracted_filename)
     preprocess_command = [
         'python', 'preprocess.py',

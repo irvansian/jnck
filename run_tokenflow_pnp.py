@@ -124,6 +124,7 @@ class TokenFlow(nn.Module):
             # make n_frames divisible by batch_size
             self.config["n_frames"] = self.config["n_frames"] - (self.config["n_frames"] % self.config["batch_size"])
         print("Number of frames: ", self.config["n_frames"])
+        print(os.path.join(latents_path, 'latents'))
         return os.path.join(latents_path, 'latents')
 
     @torch.no_grad()
