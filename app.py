@@ -77,12 +77,14 @@ def download_file(filename):
 def edit_video_function(video_path, prompt, inversion_prompt, filename, height, width, frame_count):
     job_id = str(uuid.uuid4())
     job_status[job_id] = 'processing'
-    save_dir_path = os.path.join('latents', video_path)
+    extracted_filename = video_path[5:13]
+    latents_path = os.path.join('latents', 'sd_2.1', filename)
+    save_dir_path = os.path.join('latents', extracted_filename)
     preprocess_command = [
         'python', 'preprocess.py',
         '--data_path', video_path,
         '--inversion_prompt', inversion_prompt,
-        '--save_dir', save_dir_path,
+        '--save_dir', latents_path,
         '--H', str(int(height)),
         '--W', str(int(width)),
         '--n_frames', str(frame_count)
@@ -95,7 +97,6 @@ def edit_video_function(video_path, prompt, inversion_prompt, filename, height, 
         '--config_path', config_path
     ]
 
-    latents_path = os.path.join('latents', 'sd_2.1', filename)
 
     try:
         subprocess.run(preprocess_command, check=True)
